@@ -167,6 +167,105 @@ public:
     virtual ~AffineCipher() { std::cout << "AffineCipher object destroyed.\n"; };
 };
 
+
+class PlayfairCipher : public ICipher
+{
+private:
+    struct rowAndCol { int row; int col; };
+public:
+    virtual std::string encryptPlainText(std::unordered_map<char, int>& abc, std::string plainText, std::string alphabet) override
+    {
+        auto playfairExpressionForEncryption = [&](int symbolPosition, int matrixRowSize) -> int {
+            return static_cast<int>((symbolPosition + 1) % matrixRowSize);
+        };
+        std::string encryptedText = createTheTransformedResultString(playfairExpressionForEncryption, plainText, alphabet);
+
+        return encryptedText;
+    }
+    virtual std::string decipherEncryptedText(std::unordered_map<char, int>& abc, std::string encryptedText, std::string alphabet) override
+    {
+        auto playfairExpressionForDecryption = [&](int symbolPosition, int matrixRowSize) -> int {
+            return static_cast<int>(((symbolPosition - 1) + matrixRowSize ) % matrixRowSize);
+        };
+        std::string decryptedText = createTheTransformedResultString(playfairExpressionForDecryption, encryptedText, alphabet);
+
+        return decryptedText;
+    }
+    std::string createTheTransformedResultString(const std::function<int(int, int)>& transformationExpression, std::string text, const std::string& alphabet)
+    {
+        if (text.size() % 2 != 0) {
+            text += 'Х';
+        }
+        int matrixMaxSize = 36, row = 0, col = 0;
+        int matrixRowSize = static_cast<int>(sqrt(matrixMaxSize));
+        std::string fillers = "_,.-<>/()*&^%$#@!{}:;?|+=";
+
+        std::vector<std::vector<char>> additionalMatrix;
+        additionalMatrix.resize(matrixRowSize);
+        for (auto& matrixRow : additionalMatrix) {
+            matrixRow.resize(matrixRowSize);
+        }
+        std::unordered_map<char, rowAndCol> keyMatrix;
+        std::string keyPhrase;
+        std::cout << "Введіть ключ-фразу для створення ключової матриці: ";
+        getline(std::cin, keyPhrase);
+
+        fillInTheMatrix(keyMatrix, additionalMatrix, keyPhrase, row, col, matrixRowSize);
+        fillInTheMatrix(keyMatrix, additionalMatrix, alphabet, row, col, matrixRowSize);
+        fillInTheMatrix(keyMatrix, additionalMatrix, fillers, row, col, matrixRowSize);
+
+        std::string encryptedText = "";
+
+        for (int i = 0; i < text.size(); i += 2) {
+            const auto& firstSymbolLocation = keyMatrix[text[i]];
+            const auto& secondSymbolLocation = keyMatrix[text[i + 1]];
+
+            char firstShiftedSymbol = text[i];
+            char secondShiftedSymbol = text[i + 1];
+
+            if (firstSymbolLocation.row == secondSymbolLocation.row) {
+                int shiftedColPosOfTheFirstSymbol = transformationExpression(firstSymbolLocation.col, matrixRowSize);
+                int shiftedColPosOfTheSecondSymbol = transformationExpression(secondSymbolLocation.col, matrixRowSize);
+
+                firstShiftedSymbol = additionalMatrix[firstSymbolLocation.row][shiftedColPosOfTheFirstSymbol];
+                secondShiftedSymbol = additionalMatrix[secondSymbolLocation.row][shiftedColPosOfTheSecondSymbol];
+            }
+            else if (firstSymbolLocation.col == secondSymbolLocation.col) {
+                int shiftedRowPosOfTheFirstSymbol = transformationExpression(firstSymbolLocation.row, matrixRowSize);
+                int shiftedRowPosOfTheSecondSymbol = transformationExpression(secondSymbolLocation.row, matrixRowSize);
+
+                firstShiftedSymbol = additionalMatrix[shiftedRowPosOfTheFirstSymbol][firstSymbolLocation.col];
+                secondShiftedSymbol = additionalMatrix[shiftedRowPosOfTheSecondSymbol][secondSymbolLocation.col];
+            }
+            else {
+                firstShiftedSymbol = additionalMatrix[firstSymbolLocation.row][secondSymbolLocation.col];
+                secondShiftedSymbol = additionalMatrix[secondSymbolLocation.row][firstSymbolLocation.col];
+            }
+            encryptedText += firstShiftedSymbol;
+            encryptedText += secondShiftedSymbol;
+        }
+        return encryptedText;
+    }
+    void fillInTheMatrix(std::unordered_map<char, rowAndCol>& keyMatrix, std::vector<std::vector<char>>& additionalMatrix, const std::string& fillerStr, int& row, int& col, int matrixRowSize)
+    {
+        for (const auto& symbol : fillerStr) {
+            if (keyMatrix.size() == std::pow(matrixRowSize, 2)) return;
+            if (!keyMatrix.contains(symbol)) {
+                keyMatrix[symbol] = { .row = row, .col = col };
+                additionalMatrix[row][col] = symbol;
+                if (col == matrixRowSize - 1) {
+                    std::cout << symbol << '(' << row << ',' << col << ')' << '\n';
+                    col = 0;
+                    ++row;
+                    continue;
+                }
+                std::cout << symbol << '(' << row << ',' << col << ')' << ' ';
+                ++col;
+            }
+        }
+    }
+};
+
 class CipherManager
 {
 public:
@@ -183,9 +282,9 @@ public:
         while (next) {
             int cipherNumber = 0;
             while (true) {
-                std::cout << "\nВиберіть потрібний шифр(1 - шифр Цезаря, 2 - Лінійний шифр, 3 - Афінний шифр): ";
+                std::cout << "\nВиберіть потрібний шифр(1 - шифр Цезаря, 2 - Лінійний шифр, 3 - Афінний шифр, 4 - Playfair): ";
                 std::cin >> cipherNumber;
-                if (cipherNumber == 1 || cipherNumber == 2 || cipherNumber == 3) { break; }
+                if (cipherNumber == 1 || cipherNumber == 2 || cipherNumber == 3 || cipherNumber == 4) { break; }
                 if (std::cin.fail()) {
                     std::cin.clear();
                     std::cin.ignore(32767, '\n');
@@ -229,6 +328,9 @@ public:
         case 3:
             cipherObject = std::make_unique<AffineCipher>();
             break;
+        case 4:
+            cipherObject = std::make_unique<PlayfairCipher>();
+            break;
         }
         return cipherObject;
     }
@@ -243,7 +345,7 @@ int main()
 {
     setlocale(LC_CTYPE, "ukr");
     SetConsoleCP(1251); 
-    SetConsoleOutputCP(1251);
+    SetConsoleOutputCP(1251); 
 
     std::string alphabet = "АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯ";
 
