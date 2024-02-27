@@ -1,10 +1,11 @@
 ﻿#include <memory>
-#include <iostream>
 #include <locale>
+#include <iostream>
 #include <Windows.h>
-#include <string>
 #include <unordered_map>
+#include <string_view>
 #include <functional>
+#include <string>
 #include <cmath>
 
 int findMultiplicativeInversionKey(std::unordered_map<char, int>& abc, int multKey)
@@ -20,7 +21,7 @@ int findMultiplicativeInversionKey(std::unordered_map<char, int>& abc, int multK
     return invMultKey;
 }
 
-std::string createTheResultingCipherString(const std::function<int(int)>& cipherExpression, std::unordered_map<char, int>& abc, std::string text, std::string alphabet)
+std::string createTheResultingCipherString(const std::function<int(int)>& cipherExpression, std::unordered_map<char, int>& abc, std::string_view text, std::string_view alphabet)
 {
     std::string resultText = "";
     for (const auto& symbol : text)
@@ -40,15 +41,15 @@ std::string createTheResultingCipherString(const std::function<int(int)>& cipher
 class ICipher
 {
 public:
-    virtual std::string encryptPlainText(std::unordered_map<char, int>& abc, std::string plainText, std::string alphabet) = 0;
-    virtual std::string decipherEncryptedText(std::unordered_map<char, int>& abc, std::string encryptedText, std::string alphabet) = 0;
+    virtual std::string encryptPlainText(std::unordered_map<char, int>& abc, std::string_view plainText, std::string_view alphabet) = 0;
+    virtual std::string decipherEncryptedText(std::unordered_map<char, int>& abc, std::string_view encryptedText, std::string_view alphabet) = 0;
     virtual ~ICipher() = default;
 };
 
 class CaesarCipher : public ICipher
 {
 public:
-    virtual std::string encryptPlainText(std::unordered_map<char, int>& abc, std::string plainText, std::string alphabet) override
+    virtual std::string encryptPlainText(std::unordered_map<char, int>& abc, std::string_view plainText, std::string_view alphabet) override
     {
         std::cout << "Введіть ключ для шифрування: ";
         int key = 0;
@@ -60,7 +61,7 @@ public:
         std::string encryptedText = createTheResultingCipherString(caesarExpressionForEncryption, abc, plainText, alphabet);
         return encryptedText;
     }
-    virtual std::string decipherEncryptedText(std::unordered_map<char, int>& abc, std::string encryptedText, std::string alphabet) override
+    virtual std::string decipherEncryptedText(std::unordered_map<char, int>& abc, std::string_view encryptedText, std::string_view alphabet) override
     {
         std::cout << "Введіть ключ для дешифрування: ";
         int key = 0;
@@ -78,7 +79,7 @@ public:
 class LinearCipher : public ICipher
 {
 public:
-    virtual std::string encryptPlainText(std::unordered_map<char, int>& abc, std::string plainText, std::string alphabet) override
+    virtual std::string encryptPlainText(std::unordered_map<char, int>& abc, std::string_view plainText, std::string_view alphabet) override
     {
         int multKey = 0, invMultKey = 0;
         while (true)
@@ -98,7 +99,7 @@ public:
         std::string encryptedText = createTheResultingCipherString(linearExpressionForEncryption, abc, plainText, alphabet);
         return encryptedText;
     }
-    virtual std::string decipherEncryptedText(std::unordered_map<char, int>& abc, std::string encryptedText, std::string alphabet) override
+    virtual std::string decipherEncryptedText(std::unordered_map<char, int>& abc, std::string_view encryptedText, std::string_view alphabet) override
     {
         int multKey = 0, invMultKey = 0;
         while (true)
@@ -124,7 +125,7 @@ public:
 class AffineCipher : public ICipher
 {
 public:
-    virtual std::string encryptPlainText(std::unordered_map<char, int>& abc, std::string plainText, std::string alphabet) override
+    virtual std::string encryptPlainText(std::unordered_map<char, int>& abc, std::string_view plainText, std::string_view alphabet) override
     {
         int multKey = 0, invMultKey = 0, addKey = 0;
         while (true)
@@ -144,7 +145,7 @@ public:
         std::string encryptedText = createTheResultingCipherString(affineExpressionForEncryption, abc, plainText, alphabet);
         return encryptedText;
     }
-    virtual std::string decipherEncryptedText(std::unordered_map<char, int>& abc, std::string encryptedText, std::string alphabet) override
+    virtual std::string decipherEncryptedText(std::unordered_map<char, int>& abc, std::string_view encryptedText, std::string_view alphabet) override
     {
         int multKey = 0, invMultKey, addKey = 0;
         while (true)
@@ -167,13 +168,12 @@ public:
     virtual ~AffineCipher() { std::cout << "AffineCipher object destroyed.\n"; };
 };
 
-
 class PlayfairCipher : public ICipher
 {
 private:
     struct rowAndCol { int row; int col; };
 public:
-    virtual std::string encryptPlainText(std::unordered_map<char, int>& abc, std::string plainText, std::string alphabet) override
+    virtual std::string encryptPlainText(std::unordered_map<char, int>& abc, std::string_view plainText, std::string_view alphabet) override
     {
         auto playfairExpressionForEncryption = [&](int symbolPosition, int matrixRowSize) -> int {
             return static_cast<int>((symbolPosition + 1) % matrixRowSize);
@@ -182,7 +182,7 @@ public:
 
         return encryptedText;
     }
-    virtual std::string decipherEncryptedText(std::unordered_map<char, int>& abc, std::string encryptedText, std::string alphabet) override
+    virtual std::string decipherEncryptedText(std::unordered_map<char, int>& abc, std::string_view encryptedText, std::string_view alphabet) override
     {
         auto playfairExpressionForDecryption = [&](int symbolPosition, int matrixRowSize) -> int {
             return static_cast<int>(((symbolPosition - 1) + matrixRowSize ) % matrixRowSize);
@@ -191,8 +191,9 @@ public:
 
         return decryptedText;
     }
-    std::string createTheTransformedResultString(const std::function<int(int, int)>& transformationExpression, std::string text, const std::string& alphabet)
+    std::string createTheTransformedResultString(const std::function<int(int, int)>& transformationExpression, std::string_view text_, std::string_view alphabet)
     {
+        std::string text {text_};
         if (text.size() % 2 != 0) {
             text += 'Х';
         }
@@ -246,7 +247,7 @@ public:
         }
         return encryptedText;
     }
-    void fillInTheMatrix(std::unordered_map<char, rowAndCol>& keyMatrix, std::vector<std::vector<char>>& additionalMatrix, const std::string& fillerStr, int& row, int& col, int matrixRowSize)
+    void fillInTheMatrix(std::unordered_map<char, rowAndCol>& keyMatrix, std::vector<std::vector<char>>& additionalMatrix, std::string_view fillerStr, int& row, int& col, int matrixRowSize)
     {
         for (const auto& symbol : fillerStr) {
             if (keyMatrix.size() == std::pow(matrixRowSize, 2)) return;
@@ -269,7 +270,7 @@ public:
 class CipherManager
 {
 public:
-    CipherManager(std::string alphabet_)
+    CipherManager(std::string_view alphabet_)
         :alphabet(alphabet_)
     {
         for (const auto& symbol : alphabet) {
@@ -338,7 +339,7 @@ public:
 private:
     std::unordered_map<char, int> abc;
     std::unordered_map<int, std::unique_ptr<ICipher>> ciphers;
-    std::string alphabet;
+    std::string_view alphabet;
 };
 
 int main()
@@ -348,7 +349,7 @@ int main()
     SetConsoleOutputCP(1251); 
 
     std::string alphabet = "АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯ";
-
+    
     CipherManager cipherManager{ alphabet };
     cipherManager.start();
 }
