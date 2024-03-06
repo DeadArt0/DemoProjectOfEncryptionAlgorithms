@@ -129,6 +129,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="DemoProjectOfEncryptionAlgorithms.cpp" />
+    <ClCompile Include="EncryptionAlgorithms.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="EncryptionAlgorithms.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
